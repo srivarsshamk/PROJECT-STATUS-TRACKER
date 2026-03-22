@@ -14,7 +14,7 @@ export const useProgramStore = create<ProgramStore>((set, get) => ({
   nextId: seedPrograms.length + 1,
   addProgram: (name) =>
     set((s) => ({
-      programs: [...s.programs, { id: s.nextId, programName: name }],
+      programs: [...s.programs, { id: s.nextId, name: name }],
       nextId: s.nextId + 1,
     })),
   getProgram: (id) => get().programs.find((p) => p.id === id),

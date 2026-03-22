@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useTeamStore } from "@/store/teamStore";
+import { useState, useEffect } from "react";
 import { useUpdateStore } from "@/store/updateStore";
 import { useProgramStore } from "@/store/programStore";
+import { Team } from "@/types";
+import { teamApi } from "@/api/teamApi";
 import { RagBadge } from "@/components/RagBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -14,32 +15,94 @@ import { Plus, Users, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Teams = () => {
-  const { teams, addTeam } = useTeamStore();
   const updates = useUpdateStore((s) => s.updates);
   const getProgram = useProgramStore((s) => s.getProgram);
   const { toast } = useToast();
 
+  const [teams, setTeams] = useState<Team[]>([]);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = teams.filter((t) =>
-    t.teamName.toLowerCase().includes(search.toLowerCase())
-  );
+  // Fetch all teams on component mount
+  useEffect(() => {
+    fetchTeams();
+  }, []);
 
-  const handleAdd = () => {
-    if (!newName.trim()) return;
-    addTeam(newName.trim());
-    setNewName("");
-    setModalOpen(false);
-    toast({ title: "Team created", description: `"${newName.trim()}" has been added.` });
+  // Handle search with delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearch();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchTeams = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await teamApi.getTeams();
+      setTeams(data);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch teams';
+      setError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const selectedTeam = teams.find((t) => t.id === selectedId);
-  const relatedUpdates = selectedId
-    ? updates.filter((u) => u.teamId === selectedId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    : [];
+  const handleSearch = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      if (search.trim() === "") {
+        const data = await teamApi.getTeams();
+        setTeams(data);
+      } else {
+        const data = await teamApi.searchTeams(search);
+        setTeams(data);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to search teams';
+      setError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!newName.trim()) return;
+
+    try {
+      await teamApi.addTeam(newName.trim());
+      setNewName("");
+      setModalOpen(false);
+      toast({ title: "Team created", description: `"${newName.trim()}" has been added.` });
+      // Refresh the team list
+      await fetchTeams();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to add team';
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -55,7 +118,11 @@ const Teams = () => {
 
       <Card>
         <CardContent className="p-0">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center p-8 text-muted-foreground">
+              Loading teams...
+            </div>
+          ) : teams.length === 0 ? (
             <EmptyState icon={<Users className="h-10 w-10" />} title="No teams yet" description="Create your first team to get started." action={<Button onClick={() => setModalOpen(true)}>Add Team</Button>} />
           ) : (
             <Table>
@@ -67,11 +134,11 @@ const Teams = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((t) => (
+                {teams.map((t) => (
                   <TableRow key={t.id} className="cursor-pointer" onClick={() => setSelectedId(t.id)}>
                     <TableCell className="font-mono text-muted-foreground">{t.id}</TableCell>
-                    <TableCell className="font-medium">{t.teamName}</TableCell>
-                    <TableCell className="text-right">{updates.filter((u) => u.teamId === t.id).length}</TableCell>
+                    <TableCell className="font-medium">{t.name}</TableCell>
+                    <TableCell className="text-right">{t.updates ?? 0}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -98,33 +165,38 @@ const Teams = () => {
       {/* Detail modal */}
       <Dialog open={selectedId !== null} onOpenChange={() => setSelectedId(null)}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>{selectedTeam?.teamName}</DialogTitle></DialogHeader>
-          {relatedUpdates.length === 0 ? (
-            <p className="py-4 text-sm text-muted-foreground">No updates for this team yet.</p>
-          ) : (
-            <div className="max-h-80 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Program</TableHead>
-                    <TableHead>Update</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {relatedUpdates.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell><RagBadge code={u.ragCode} /></TableCell>
-                      <TableCell>{getProgram(u.programId)?.programName ?? "—"}</TableCell>
-                      <TableCell className="max-w-xs truncate">{u.updateText}</TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+          <DialogHeader><DialogTitle>{teams.find((t) => t.id === selectedId)?.name}</DialogTitle></DialogHeader>
+          {(() => {
+            const relatedUpdates = selectedId
+              ? updates.filter((u) => u.teamId === selectedId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              : [];
+            return relatedUpdates.length === 0 ? (
+              <p className="py-4 text-sm text-muted-foreground">No updates for this team yet.</p>
+            ) : (
+              <div className="max-h-80 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Program</TableHead>
+                      <TableHead>Update</TableHead>
+                      <TableHead>Date</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {relatedUpdates.map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell><RagBadge code={u.ragCode} /></TableCell>
+                        <TableCell>{getProgram(u.programId)?.name ?? "—"}</TableCell>
+                        <TableCell className="max-w-xs truncate">{u.updateText}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

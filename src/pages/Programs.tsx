@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useProgramStore } from "@/store/programStore";
+import { useState, useEffect } from "react";
 import { useUpdateStore } from "@/store/updateStore";
 import { useTeamStore } from "@/store/teamStore";
+import { Program } from "@/types";
+import { programApi } from "@/api/programApi";
 import { RagBadge } from "@/components/RagBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -14,32 +15,94 @@ import { Plus, FolderKanban, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Programs = () => {
-  const { programs, addProgram } = useProgramStore();
   const updates = useUpdateStore((s) => s.updates);
   const getTeam = useTeamStore((s) => s.getTeam);
   const { toast } = useToast();
 
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = programs.filter((p) =>
-    p.programName.toLowerCase().includes(search.toLowerCase())
-  );
+  // Fetch all programs on component mount
+  useEffect(() => {
+    fetchPrograms();
+  }, []);
 
-  const handleAdd = () => {
-    if (!newName.trim()) return;
-    addProgram(newName.trim());
-    setNewName("");
-    setModalOpen(false);
-    toast({ title: "Program created", description: `"${newName.trim()}" has been added.` });
+  // Handle search with delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearch();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchPrograms = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await programApi.getAllPrograms();
+      setPrograms(data);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch programs';
+      setError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const selectedProgram = programs.find((p) => p.id === selectedId);
-  const relatedUpdates = selectedId
-    ? updates.filter((u) => u.programId === selectedId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    : [];
+  const handleSearch = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      if (search.trim() === "") {
+        const data = await programApi.getAllPrograms();
+        setPrograms(data);
+      } else {
+        const data = await programApi.searchPrograms(search);
+        setPrograms(data);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to search programs';
+      setError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!newName.trim()) return;
+
+    try {
+      await programApi.addProgram(newName.trim());
+      setNewName("");
+      setModalOpen(false);
+      toast({ title: "Program created", description: `"${newName.trim()}" has been added.` });
+      // Refresh the program list
+      await fetchPrograms();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to add program';
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -62,7 +125,11 @@ const Programs = () => {
       {/* List */}
       <Card>
         <CardContent className="p-0">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center p-8 text-muted-foreground">
+              Loading programs...
+            </div>
+          ) : programs.length === 0 ? (
             <EmptyState
               icon={<FolderKanban className="h-10 w-10" />}
               title="No programs yet"
@@ -79,16 +146,12 @@ const Programs = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p) => (
-                  <TableRow
-                    key={p.id}
-                    className="cursor-pointer"
-                    onClick={() => setSelectedId(p.id)}
-                  >
+                {programs.map((p) => (
+                  <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelectedId(p.id)}>
                     <TableCell className="font-mono text-muted-foreground">{p.id}</TableCell>
-                    <TableCell className="font-medium">{p.programName}</TableCell>
+                    <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell className="text-right">
-                      {updates.filter((u) => u.programId === p.id).length}
+                      {p.updates ?? 0}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -125,36 +188,43 @@ const Programs = () => {
       <Dialog open={selectedId !== null} onOpenChange={() => setSelectedId(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{selectedProgram?.programName}</DialogTitle>
+            <DialogTitle>{programs.find((p) => p.id === selectedId)?.name}</DialogTitle>
           </DialogHeader>
-          {relatedUpdates.length === 0 ? (
-            <p className="py-4 text-sm text-muted-foreground">No updates for this program yet.</p>
-          ) : (
-            <div className="max-h-80 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Team</TableHead>
-                    <TableHead>Update</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {relatedUpdates.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell><RagBadge code={u.ragCode} /></TableCell>
-                      <TableCell>{getTeam(u.teamId)?.teamName ?? "—"}</TableCell>
-                      <TableCell className="max-w-xs truncate">{u.updateText}</TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                        {new Date(u.createdAt).toLocaleDateString()}
-                      </TableCell>
+          {(() => {
+            const relatedUpdates = selectedId
+              ? updates
+                  .filter((u) => u.programId === selectedId)
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              : [];
+            return relatedUpdates.length === 0 ? (
+              <p className="py-4 text-sm text-muted-foreground">No updates for this program yet.</p>
+            ) : (
+              <div className="max-h-80 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Team</TableHead>
+                      <TableHead>Update</TableHead>
+                      <TableHead>Date</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {relatedUpdates.map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell><RagBadge code={u.ragCode} /></TableCell>
+                        <TableCell>{getTeam(u.teamId)?.name ?? "—"}</TableCell>
+                        <TableCell className="max-w-xs truncate">{u.updateText}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          {new Date(u.createdAt).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

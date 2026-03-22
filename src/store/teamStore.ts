@@ -14,7 +14,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
   nextId: seedTeams.length + 1,
   addTeam: (name) =>
     set((s) => ({
-      teams: [...s.teams, { id: s.nextId, teamName: name }],
+      teams: [...s.teams, { id: s.nextId, name: name }],
       nextId: s.nextId + 1,
     })),
   getTeam: (id) => get().teams.find((t) => t.id === id),

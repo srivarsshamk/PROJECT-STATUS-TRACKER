@@ -1,19 +1,19 @@
 import { Program, Team, Update } from "@/types";
 
 export const seedPrograms: Program[] = [
-  { id: 1, programName: "Cloud Migration" },
-  { id: 2, programName: "Mobile App Redesign" },
-  { id: 3, programName: "Data Platform Upgrade" },
-  { id: 4, programName: "Security Hardening" },
-  { id: 5, programName: "Customer Portal v2" },
+  { id: 1, name: "Cloud Migration" },
+  { id: 2, name: "Mobile App Redesign" },
+  { id: 3, name: "Data Platform Upgrade" },
+  { id: 4, name: "Security Hardening" },
+  { id: 5, name: "Customer Portal v2" },
 ];
 
 export const seedTeams: Team[] = [
-  { id: 1, teamName: "Backend Engineering" },
-  { id: 2, teamName: "Frontend Engineering" },
-  { id: 3, teamName: "DevOps" },
-  { id: 4, teamName: "QA & Testing" },
-  { id: 5, teamName: "Product Design" },
+  { id: 1, name: "Backend Engineering" },
+  { id: 2, name: "Frontend Engineering" },
+  { id: 3, name: "DevOps" },
+  { id: 4, name: "QA & Testing" },
+  { id: 5, name: "Product Design" },
 ];
 
 export const seedUpdates: Update[] = [

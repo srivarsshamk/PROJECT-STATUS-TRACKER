@@ -2,12 +2,14 @@
 
 export interface Program {
   id: number;
-  programName: string;
+  name: string;
+  updates?: number;
 }
 
 export interface Team {
   id: number;
-  teamName: string;
+  name: string;
+  updates?: number;
 }
 
 export type RagCode = "RED" | "GREEN" | "AMBER";
