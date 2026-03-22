@@ -1,73 +1,168 @@
-# Welcome to your Lovable project
+# Project Status Tracker
 
-## Project info
+A comprehensive, modern dashboard application for monitoring program and team updates in real-time. Built with React, TypeScript, and Tailwind CSS.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 📋 Overview
 
-## How can I edit this code?
+Project Status Tracker provides an intuitive interface for:
+- 📊 Real-time dashboard with KPI cards and data visualizations
+- 📋 Program and team management
+- 🔄 Status update tracking (RED, AMBER, GREEN)
+- 📈 Performance analytics and trends
+- 🔍 Advanced filtering and search capabilities
+- 🌓 Dark/Light theme support
 
-There are several ways of editing your application.
+## ✨ Features
 
-**Use Lovable**
+### Dashboard
+- KPI summary cards (Programs, Teams, Total Updates, Last 7 Days)
+- Status distribution pie chart
+- Updates trend line chart
+- Program performance bar chart (Top 5)
+- Team workload bar chart (Top 5)
+- Advanced filtering with date ranges
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Programs
+- View all programs with update counts
+- Search and filter programs
+- Add new programs
+- Backend API integration
 
-Changes made via Lovable will be committed automatically to this repo.
+### Teams
+- Manage teams and track updates
+- Search functionality
+- Add new teams
+- Backend API integration
 
-**Use your preferred IDE**
+### Updates
+- Track status updates across programs and teams
+- Filter by status (RED, AMBER, GREEN)
+- Date range filtering
+- Real-time search and sorting
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠 Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**: React 18 with TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Visualization**: Recharts
+- **State Management**: Zustand
+- **Build Tool**: Vite
+- **HTTP Client**: Axios
 
-Follow these steps:
+## 🚀 Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Prerequisites
+- Node.js 16+
+- npm or bun package manager
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Installation
 
-# Step 3: Install the necessary dependencies.
-npm i
+```bash
+# Clone the repository
+git clone https://github.com/srivarsshamk/PROJECT-STATUS-TRACKER.git
+cd PROJECT-STATUS-TRACKER/angular-app-ace
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Install dependencies
+npm install
+# or
+bun install
 ```
 
-**Edit a file directly in GitHub**
+### Development
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# Start development server
+npm run dev
+# or
+bun run dev
+```
 
-**Use GitHub Codespaces**
+The app will be available at `http://localhost:5173`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Build
 
-## What technologies are used for this project?
+```bash
+# Build for production
+npm run build
+# or
+bun run build
+```
 
-This project is built with:
+## 🔌 API Integration
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The project connects to a Spring Boot backend with the following endpoints:
 
-## How can I deploy this project?
+```
+Base URL: http://localhost:8080/api
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Programs:
+  GET    /programs           - Get all programs
+  GET    /programs/search    - Search programs
+  POST   /programs           - Create new program
 
-## Can I connect a custom domain to my Lovable project?
+Teams:
+  GET    /teams              - Get all teams
+  GET    /teams/search       - Search teams
+  POST   /teams              - Create new team
 
-Yes, you can!
+Updates:
+  GET    /updates            - Get all updates
+  GET    /updates/filter     - Filter updates by status, program, team, date range
+  POST   /updates            - Create new update
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📁 Project Structure
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```
+angular-app-ace/
+├── src/
+│   ├── api/                # API call functions
+│   │   ├── programApi.ts   # Program API endpoints
+│   │   ├── teamApi.ts      # Team API endpoints
+│   │   └── updateApi.ts    # Update API endpoints
+│   ├── components/         # Reusable UI components
+│   ├── pages/              # Page components
+│   │   ├── Dashboard.tsx
+│   │   ├── Programs.tsx
+│   │   ├── Teams.tsx
+│   │   └── Updates.tsx
+│   ├── store/              # Zustand state management
+│   ├── types/              # TypeScript type definitions
+│   ├── lib/                # Utility functions
+│   ├── hooks/              # Custom React hooks
+│   └── App.tsx
+├── public/                 # Static assets
+├── package.json
+├── vite.config.ts
+└── tsconfig.json
+```
+
+## 🎨 Theming
+
+The application supports both light and dark themes with automatic detection and manual toggle. Theme preference is managed through the theme store and applied to all components including charts and visualizations.
+
+## 📝 Scripts
+
+```bash
+npm run dev       # Start development server
+npm run build     # Build for production
+npm run lint      # Run ESLint
+npm run test      # Run tests
+npm run preview   # Preview production build
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is open source and available under the MIT License.
+
+## 📞 Support
+
+For issues and questions, please open an issue on the [GitHub repository](https://github.com/srivarsshamk/PROJECT-STATUS-TRACKER).
+
+---
+
+Built with ❤️
